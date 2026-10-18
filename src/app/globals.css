@@ -1591,6 +1591,54 @@ label small,
   align-items: center;
   margin-top: 15px;
 }
+.flappy-degree-card {
+  display: flex;
+  gap: 12px;
+  margin-top: 20px;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: var(--pale);
+}
+.flappy-degree-card > svg {
+  margin-top: 2px;
+  color: var(--green);
+}
+.flappy-degree-content {
+  min-width: 0;
+}
+.flappy-degree-content h4 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.5;
+}
+.flappy-degree-content > p {
+  max-width: 55ch;
+  margin-top: 5px;
+  color: #5b685f;
+  font-size: 12px;
+  line-height: 1.7;
+}
+.flappy-degree-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 16px;
+  margin-top: 12px;
+}
+.flappy-degree-actions > .button,
+.flappy-degree-actions > a {
+  min-height: 44px;
+}
+.flappy-degree-actions > a {
+  padding-block: 8px;
+  font-size: 11px;
+}
+.flappy-degree-content > .fine {
+  margin-top: 9px;
+  font-size: 11px;
+}
 .owned-card {
   display: flex;
   align-items: center;

@@ -72,6 +72,14 @@ If npm's default cache directory is unavailable in Codex, use `npm ci --cache /t
 | `SUPABASE_SERVICE_ROLE_KEY`            | Supabase legacy API keys                                              | **Optional seed command only**, never browser code |
 | `SEED_SELLER_ID`                       | Auth → Users, UUID of your sample seller                              | Optional seed command                              |
 
+### Optional: play while you wait
+
+Set `NEXT_PUBLIC_FLAPPY_DEGREE_URL` in the CampusLoop `.env.local` to the public **HTTPS URL of your independently deployed Flappy Degree game**, then restart `npm run dev`. Leave it empty to hide the feature. Invalid/non-HTTPS URLs and URLs containing embedded credentials are ignored. This is public developer-controlled configuration; never put reservation details, pickup codes, tokens or secrets in the URL.
+
+The compact invitation appears only in **My loop → My pickups**, below the existing controls for a buyer's `reserved` pickup. It is hidden for seller handoffs and completed/cancelled reservations. **Play Flappy Degree ↗** synchronously requests a 480×720 desktop pop-out; small/touch devices request a normal new tab. Browser policy decides the actual window behavior. The always-visible **Open in a new tab instead** link is the popup-blocker fallback. Both routes use `noopener`/`noreferrer`; CampusLoop remains open and sends no reservation or account data. Game resources are not loaded or embedded by CampusLoop.
+
+On Vercel, add the optional variable to **CampusLoop → Settings → Environment Variables** for the intended environment(s), then rebuild/redeploy when you choose. As a `NEXT_PUBLIC_` variable it is embedded at build time. No setting, source change, authentication connection or deployment in the Flappy Degree project is required. The projects remain independent. See [local setup](docs/LOCAL_SETUP_MAC.md#optional-flappy-degree-invitation) and [Vercel configuration](docs/DEPLOY_VERCEL.md#optional-flappy-degree-invitation).
+
 `.env.local` and all secret-bearing env files are ignored by Git. Only `.env.example` is committed. Never put a service-role key or OpenAI key in a `NEXT_PUBLIC_` variable. The running application does not use a service-role key.
 
 ## Supabase setup (existing hosted project)
