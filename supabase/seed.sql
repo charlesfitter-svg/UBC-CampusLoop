@@ -1,0 +1,2 @@
+-- No implicit account creation or fake completed activity.
+-- After creating a seller account, run `npm run seed` with the variables in .env.example.

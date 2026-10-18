@@ -44,6 +44,7 @@ create table public.reservations (
   check (buyer_id <> seller_id),
   check ((status = 'completed') = (completed_at is not null))
 );
+create index reservations_listing on public.reservations(listing_id);
 create index reservations_buyer on public.reservations(buyer_id, created_at desc);
 create index reservations_seller on public.reservations(seller_id, created_at desc);
 create table public.pickup_secrets (
@@ -140,6 +141,7 @@ begin
     if existing.listing_id <> p_listing or existing.quantity <> p_quantity then raise exception 'Retry key already used for a different request'; end if;
     return existing.id;
   end if;
+  if item.is_demo then raise exception 'Sample listings cannot be reserved. Publish your own test listing.'; end if;
   if item.seller_id = actor then raise exception 'You cannot reserve your own listing'; end if;
   if item.status <> 'active' or item.expires_at <= now() then raise exception 'This listing is no longer available'; end if;
   if item.available_quantity < p_quantity then raise exception 'Not enough quantity available'; end if;

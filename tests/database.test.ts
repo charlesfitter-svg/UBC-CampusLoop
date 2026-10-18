@@ -256,10 +256,10 @@ describe("real PostgreSQL migration functions and role policies (PGlite)", () =>
   });
   it("never counts seeded fictional activity", async () => {
     const l = await listing();
+    const id = await reserve(l.id);
     await db.query("update public.listings set is_demo=true where id=$1", [
       l.id,
     ]);
-    const id = await reserve(l.id);
     const code = (
       await as<{ code: string }>(
         buyer,
@@ -337,5 +337,52 @@ describe("real PostgreSQL migration functions and role policies (PGlite)", () =>
         )
       ).rows,
     ).toHaveLength(0);
+  });
+});
+
+describe("additional authorization boundaries", () => {
+  it("keeps profiles private and denies editing another profile", async () => {
+    expect(
+      (await as(buyer, "select * from public.profiles where id=$1", [seller]))
+        .rows,
+    ).toHaveLength(0);
+    expect(
+      (
+        await as(
+          buyer,
+          "update public.profiles set display_name='Intruder' where id=$1 returning id",
+          [seller],
+        )
+      ).rows,
+    ).toHaveLength(0);
+  });
+  it("does not permit API reservations of presentation samples", async () => {
+    const l = await listing();
+    await db.query("update public.listings set is_demo=true where id=$1", [
+      l.id,
+    ]);
+    await expect(reserve(l.id)).rejects.toThrow(/Sample listings/);
+  });
+  it("allows a buyer to read removed reserved listings for their pickup history", async () => {
+    const l = await listing();
+    await reserve(l.id);
+    await as(seller, "select public.remove_listing($1)", [l.id]);
+    expect(
+      (await as(buyer, "select id from public.listings where id=$1", [l.id]))
+        .rows,
+    ).toHaveLength(1);
+    expect(
+      (await as(stranger, "select id from public.listings where id=$1", [l.id]))
+        .rows,
+    ).toHaveLength(0);
+  });
+  it("blocks completion after ten incorrect codes", async () => {
+    const l = await listing();
+    const id = await reserve(l.id);
+    for (let i = 0; i < 10; i++)
+      await as(seller, "select public.complete_pickup($1,$2)", [id, "INVALID"]);
+    await expect(
+      as(seller, "select public.complete_pickup($1,$2)", [id, "INVALID"]),
+    ).rejects.toThrow(/Too many/);
   });
 });

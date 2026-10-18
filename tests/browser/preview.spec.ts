@@ -82,6 +82,9 @@ test("impact reports zero rather than fictional activity and mobile layout fits"
       () => document.documentElement.scrollWidth <= window.innerWidth,
     ),
   ).toBe(true);
+  expect(
+    await page.evaluate(() => document.documentElement.scrollWidth),
+  ).toBeLessThanOrEqual(page.viewportSize()!.width);
   for (const image of await page.locator("img").all())
     expect(
       await image.evaluate(

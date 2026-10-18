@@ -443,13 +443,15 @@ export default function Dashboard() {
               </div>
               {l.status === "active" && (
                 <div className="button-row">
-                  <Link
-                    className="button secondary small"
-                    href={`/listings/${l.id}/edit`}
-                  >
-                    <Edit3 size={14} />
-                    Edit
-                  </Link>
+                  {!l.is_demo && (
+                    <Link
+                      className="button secondary small"
+                      href={`/listings/${l.id}/edit`}
+                    >
+                      <Edit3 size={14} />
+                      Edit
+                    </Link>
+                  )}
                   <button
                     className="icon-button danger-link"
                     aria-label={`Remove ${l.title}`}

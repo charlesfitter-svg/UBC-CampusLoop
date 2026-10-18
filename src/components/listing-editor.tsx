@@ -447,7 +447,12 @@ export function ListingEditor({ existing }: { existing?: Listing }) {
               <button
                 type="button"
                 className="text-link"
-                onClick={() => setManual(true)}
+                onClick={() => {
+                  setManual(true);
+                  formRef.current
+                    ?.querySelector<HTMLInputElement>("input")
+                    ?.focus();
+                }}
               >
                 Write it myself
               </button>
@@ -539,6 +544,7 @@ export function ListingEditor({ existing }: { existing?: Listing }) {
             <span>Pass it on for free?</span>
             <button
               type="button"
+              aria-label="Pass it on for free?"
               className={Number(form.price) === 0 ? "toggle active" : "toggle"}
               aria-pressed={Number(form.price) === 0}
               onClick={() =>

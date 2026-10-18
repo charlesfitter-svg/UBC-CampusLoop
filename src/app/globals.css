@@ -2725,4 +2725,17 @@ label small,
   }
 }
 
-.results-line > label { flex-direction: row; }
+.results-line > label {
+  flex-direction: row;
+}
+
+@media (max-width: 600px) {
+  .orbit {
+    width: 74%;
+    height: 78%;
+  }
+  .orbit-two {
+    width: 86%;
+    height: 60%;
+  }
+}

@@ -15,7 +15,8 @@
     "test:e2e": "playwright test",
     "seed": "node --env-file=.env.local scripts/seed.mjs",
     "test:postgres": "node scripts/test-postgres.mjs",
-    "format": "prettier --write src tests scripts *.ts *.mjs *.json *.md"
+    "format": "prettier --write src tests scripts *.ts *.mjs *.json *.md",
+    "test:connected": "playwright test --config playwright.connected.config.ts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.7",

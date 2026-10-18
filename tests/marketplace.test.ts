@@ -1,3 +1,4 @@
+import { safeRedirect } from "../src/lib/safe-redirect";
 import { describe, it, expect } from "vitest";
 import {
   listingSchema,
@@ -81,4 +82,19 @@ describe("AI boundary", () => {
     expect(aiError(401).status).toBe(503);
     expect(aiError(500).message).toContain("safe");
   });
+});
+
+describe("login redirects", () => {
+  it("allows an internal listing path", () =>
+    expect(safeRedirect("/listings/123?x=1", "https://campus.test")).toBe(
+      "/listings/123?x=1",
+    ));
+  it.each([
+    "https://evil.test",
+    "//evil.test",
+    "/\\evil.test",
+    "javascript:alert(1)",
+  ])("rejects external redirect %s", (value) =>
+    expect(safeRedirect(value, "https://campus.test")).toBe("/dashboard"),
+  );
 });

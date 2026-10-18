@@ -1,6 +1,7 @@
 "use client";
 import { useState, type FormEvent } from "react";
 import Link from "next/link";
+import { safeRedirect } from "@/lib/safe-redirect";
 import { ArrowRight, Leaf, Mail } from "lucide-react";
 import { browserSupabase, backendConfigured } from "@/lib/supabase/client";
 export default function AuthPage() {
@@ -42,11 +43,7 @@ export default function AuthPage() {
       if (result.error) throw result.error;
       if (result.data.session) {
         const next = new URLSearchParams(location.search).get("next");
-        location.assign(
-          next && next.startsWith("/") && !next.startsWith("//")
-            ? next
-            : "/dashboard",
-        );
+        location.assign(safeRedirect(next, location.origin));
       } else
         setMessage(
           "Check your email to confirm your account, then come back to log in.",
