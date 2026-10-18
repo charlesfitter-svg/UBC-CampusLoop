@@ -4,7 +4,7 @@ Good things deserve another loop. CampusLoop is an independent UBC student surpl
 
 The first implementation was built from the owner's Master MVP Implementation & Execution Directive. The build specification added separately on GitHub is preserved in `CODEX_BUILD_PROMPT.md`; this README describes the actual code. In particular, use `OPENAI_MODEL` (default `gpt-4.1-mini`), `/list/new`, `/auth`, `/dashboard`, `/api/ai/listing` and `npm run seed`. Proposed `OPENAI_VISION_MODEL`, `NEXT_PUBLIC_SITE_URL`, `/sell`, and `seed:demo` names in the original blueprint are not configuration for this version.
 
-## What works
+## Implemented features
 
 - Responsive marketplace with search, Food / Items / Free filters, sorting, details, quantity and deadlines.
 - Prominent **List with AI**, mobile camera input, desktop upload/drop, immediate preview, on-device JPEG compression, structured OpenAI Responses output, editable review, and an honest manual fallback.
@@ -16,6 +16,18 @@ The first implementation was built from the owner's Master MVP Implementation & 
 
 Without Supabase configuration, the UI shows six clearly labelled fictional samples. Samples cannot be reserved or contribute to impact. Photo upload and manual editing work in preview; publishing and AI require a signed-in connected account. Preview does not simulate successful backend actions.
 
+## Start here: Mac + Supabase Cloud
+
+The implementation and owner-uploaded build specification are integrated into GitHub `main`. A real hosted Supabase/OpenAI verification is still pending; preview and mocked-provider tests are not proof of that connection.
+
+1. [Mac / VS Code setup](docs/LOCAL_SETUP_MAC.md): clone `charlesfitter-svg/UBC-CampusLoop` on `main`, install Node 24 and dependencies, configure ignored `.env.local`, and start the app.
+2. [Supabase dashboard setup](docs/SUPABASE_SETUP.md): inspect the existing **CampusLoop Main** project, apply the exact migration once, verify explicit grants/RLS, Storage, Email Auth and `/auth/callback`.
+3. [Hosted integration checklist](docs/HOSTED_VERIFICATION.md): genuine OpenAI request, two-account lifecycle, a third buyer for contention, authorization, expiry and impact, with expected outcomes and troubleshooting.
+4. [Vercel deployment guide](docs/DEPLOY_VERCEL.md): use later, after live local checks. Nothing is deployed or published automatically by these instructions.
+5. [60–90 second demo script](DEMO_SCRIPT.md).
+
+For normal local usage only `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` and server-only `OPENAI_API_KEY` need values. `OPENAI_MODEL` defaults to `gpt-4.1-mini`; its restricted key needs Responses create/write (`POST /v1/responses`). The optional seed administrator key is not an application prerequisite. No Docker, Stripe or Google Maps API key is needed to run against Supabase Cloud.
+
 ## Stack and prerequisites
 
 Next.js 16 App Router, React 19, TypeScript, Tailwind CSS 4 plus custom CSS, Supabase Auth/Postgres/Storage, OpenAI's official Node SDK and Zod. Node **22+** (validated with 24), npm, and a Supabase project. Docker is optional for database contention tests or local Supabase. There is no Stripe or Maps API key requirement.
@@ -24,7 +36,7 @@ Next.js 16 App Router, React 19, TypeScript, Tailwind CSS 4 plus custom CSS, Sup
 
 ```sh
 npm ci
-cp .env.example .env.local
+if [ ! -e .env.local ]; then cp .env.example .env.local; fi
 # Fill in the variables below for connected mode, or leave them empty for preview.
 npm run dev
 ```
@@ -72,7 +84,7 @@ The running app never queries `auth.users`, nor publishes user emails. Profiles 
 
 ## OpenAI setup and behavior
 
-Put the project key in `OPENAI_API_KEY` on the **server** and set a project spending limit in OpenAI's dashboard. `/api/ai/listing` authenticates the Supabase user, checks same-origin requests, validates request size and image signatures, and consumes a database-backed quota of eight analyses per user per clock hour. Failed provider attempts also consume quota; edits never call AI automatically. Provider automatic retries are disabled.
+Put the project key in `OPENAI_API_KEY` on the **server** and authorize Responses create/write (`POST /v1/responses`) plus the configured model. Review rate limits, low budgets/alerts and credit/auto-recharge controls in OpenAI's dashboard; budget alerts generally are not a guaranteed hard spending cutoff. `/api/ai/listing` authenticates the Supabase user, checks same-origin requests, validates request size and image signatures, and consumes a database-backed quota of eight analyses per user per clock hour. Failed provider attempts also consume quota; edits never call AI automatically. Provider automatic retries are disabled.
 
 The official SDK calls `responses.parse` with a strict structured Zod format, `store:false`, 1,200 maximum output tokens and a 45-second timeout. The schema is validated again at runtime, including category/subcategory consistency. Refusals, empty output, malformed output, rate limits and network errors return actionable errors while retaining the photo and form. Images and provider payloads are not logged. Images are sent to OpenAI for analysis; published photos are stored as files in Supabase, never base64 database rows.
 
@@ -129,12 +141,18 @@ npm run test:e2e         # preview browser tests; no Supabase env variables conf
 
 ## Deploy on Vercel
 
-1. Import this repository as a Next.js project, use Node 22+ and the npm lockfile.
+1. When you choose to deploy, follow [the separate Vercel guide](docs/DEPLOY_VERCEL.md). Import this repository as a Next.js project, use Node 24 (minimum 22+) and the npm lockfile.
 2. Configure the two `NEXT_PUBLIC_SUPABASE_*` values **before building**, plus server-only `OPENAI_API_KEY` and optional `OPENAI_MODEL`. Do not add the seed service-role key to the app unless running an explicit administrative seed outside browser code.
 3. Apply the migration to the target Supabase project and configure Auth Site URL/redirects for the final HTTPS deployment. Allow server egress to your exact Supabase host and `api.openai.com` if your environment restricts network access.
 4. Deploy, sign in as two separate users, run the live walkthrough, and verify upload policies and actual AI access. The Node API route has a 60-second maximum duration; ensure the hosting plan permits it. Requests after compression stay below 3 MB (4 MB multipart ceiling).
 
 Public release also needs SMTP/deliverability, moderation/reporting, account/API abuse controls, retention and orphan-photo cleanup, privacy/terms/food redistribution guidance, monitoring and accessibility review. Verify third-party sample image reuse rights or replace those visuals with your own before public distribution (see `public/images/ATTRIBUTION.md`).
+
+## Differences from the original blueprint
+
+The original `CODEX_BUILD_PROMPT.md` is retained, not a promise that every suggested field/route/security enhancement exists. Current startup instructions use the actual variable/route names above. The category values are `food` and `items`; landmarks are a curated map in `src/lib/marketplace.ts`, not a database `pickup_locations` table. Paid behavior derives from integer cents and a reservation price snapshot; there is no payment-processing status table. Presentation seeds intentionally cannot be reserved.
+
+Pickup codes are retrievable plaintext in a buyer-only RLS table with seller-only verification and ten wrong attempts, not the blueprint's proposed hash/regeneration design. Active expired listing information remains readable with expired/unavailable states; new reservations are rejected by server time. Quantity/category changes are guarded after reservations, but pickup/deadline edits are not notified/snapshotted. These are actual limitations to review before unrestricted launch, not additional env settings. No completed features were rebuilt during repository integration.
 
 ## Known limits and next steps
 
