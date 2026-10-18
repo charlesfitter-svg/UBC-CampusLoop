@@ -34,3 +34,7 @@ Refer to BUILD_PROGRESS.md for the final executed checks. Hosted Supabase and re
 ### Full local integration check
 
 `node scripts/test-local.mjs` reads public credentials from an installed Supabase CLI (`SUPABASE_CLI_BIN` override supported), refuses non-loopback projects, starts a temporary connected app and runs `npm run test:connected`. It needs a fresh disposable local database and email confirmations disabled only in that local config. See README. In this Codex machine the official Supabase Postgres image failed to unpack in Docker with `no space left on device`; the full connected suite could not run. PostgreSQL transaction/policy tests use a smaller successfully tested image and still pass. Hosted credentials are the alternative for manually verifying the owner's actual project.
+
+## Reconciliation with the GitHub starter documents
+
+The owner-uploaded `CODEX_BUILD_PROMPT.md` is preserved in full. The generated application uses `OPENAI_MODEL=gpt-4.1-mini`, not the blueprint's proposed `OPENAI_VISION_MODEL`. It does not read `NEXT_PUBLIC_SITE_URL`; callback URLs use the current browser origin. This guide and `.env.example` name the variables actually read by the code. No application features are being rebuilt during repository integration. Follow your hackathon's AI-use policy and be prepared to explain the implementation and its verification limits.

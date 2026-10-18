@@ -2,7 +2,7 @@
 
 Good things deserve another loop. CampusLoop is an independent UBC student surplus marketplace: photograph an item, review an AI-written draft, publish it, reserve it, meet at a campus landmark, and confirm the handoff.
 
-The repository initially contained only “Personal Project.” `CODEX_BUILD_PROMPT.md` was not present; the owner's Master MVP Implementation & Execution Directive guided this implementation.
+The first implementation was built from the owner's Master MVP Implementation & Execution Directive. The build specification added separately on GitHub is preserved in `CODEX_BUILD_PROMPT.md`; this README describes the actual code. In particular, use `OPENAI_MODEL` (default `gpt-4.1-mini`), `/list/new`, `/auth`, `/dashboard`, `/api/ai/listing` and `npm run seed`. Proposed `OPENAI_VISION_MODEL`, `NEXT_PUBLIC_SITE_URL`, `/sell`, and `seed:demo` names in the original blueprint are not configuration for this version.
 
 ## What works
 
