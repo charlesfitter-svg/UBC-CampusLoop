@@ -178,3 +178,17 @@ These check types, lint, schemas, mocked AI API behavior and actual SQL/RLS via 
 To test the production build locally, stop the dev server and run `npm run start`. Do not run a build while another process is serving the same build output. To stop the server, press **Ctrl+C**. When sharing problems, share command names/status codes and sanitized messages, never env contents, passwords, network dumps or keys.
 
 See [SUPABASE_SETUP.md](SUPABASE_SETUP.md), [HOSTED_VERIFICATION.md](HOSTED_VERIFICATION.md), and [DEPLOY_VERCEL.md](DEPLOY_VERCEL.md) for the remaining exact actions and troubleshooting.
+
+## Optional Flappy Degree invitation
+
+This optional UI feature needs no database change, game API key or cross-application login. In **CampusLoop's** local `.env.local`, add:
+
+```dotenv
+NEXT_PUBLIC_FLAPPY_DEGREE_URL=https://YOUR-FLAPPY-DEGREE-DEPLOYMENT.vercel.app
+```
+
+Replace the placeholder with your existing game's real public HTTPS deployment/page URL. Do not put credentials, tokens, user information, reservation IDs or pickup codes into that public URL. Non-HTTPS/malformed/credential-bearing URLs or an empty value hide the card. Use a normal absolute URL with encoded spaces if necessary.
+
+Restart the CampusLoop development server. Log in as a buyer with a `reserved` pickup, then open **My loop → My pickups**. Below the existing pickup information/actions, **Waiting for your pickup?** offers **Play Flappy Degree ↗**. Desktop requests a separate 480×720 pop-out; small/touch devices request a new tab. The browser may choose a different presentation. If the popup is blocked, use **Open in a new tab instead**. Your CampusLoop page and reservation remain intact. Completed/cancelled pickups and Seller handoffs never show this invitation.
+
+No iframe, game code, automatic game loading, identity/token transfer, leaderboard or reward is added. Keep the game's separate React/Vite repository and Vercel project unchanged. Removing the variable and restarting hides the feature again. Production builds need a rebuild when this public value changes; see the Vercel guide.

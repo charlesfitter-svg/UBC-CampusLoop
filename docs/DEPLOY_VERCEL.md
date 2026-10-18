@@ -109,3 +109,11 @@ Wait for verified DNS and HTTPS, select your canonical apex or `www` domain, the
 **Future scaling only:** Stripe Checkout/Connect with webhooks/payouts, restaurant POS synchronization, verified multi-location businesses, messages, delivery. None is a prerequisite to the current free/pay-at-pickup marketplace, and none is deployed by this guide.
 
 Changing Vercel settings, DNS, hosted SQL, enabling arbitrary signup and making real API calls are intentional owner actions. Codex environment publication is a separate developer-environment snapshot feature and is neither required for running your Mac clone nor equivalent to deploying this application.
+
+## Optional Flappy Degree invitation
+
+To enable the game link later, open **CampusLoop's Vercel project → Settings → Environment Variables** and add `NEXT_PUBLIC_FLAPPY_DEGREE_URL` with your separately deployed Flappy Degree game's stable public HTTPS URL. Choose Production and/or Preview deliberately. Use the game deployment/page URL alone, without credentials, user/session tokens, pickup codes or reservation information. This public build-time setting is not a secret.
+
+Rebuild/redeploy CampusLoop yourself when ready; changing a `NEXT_PUBLIC_` setting does not change an existing browser bundle. A missing/empty or invalid/non-HTTPS/credential-bearing value hides the optional card. No change to the game repository, Vercel project, authentication or deployment is needed. There is no iframe or game resource preloading.
+
+Smoke-test an active buyer reservation in **My loop → My pickups**: the card follows existing pickup controls, its button opens the independent game in a protected desktop pop-out or mobile tab, and CampusLoop stays open. Test the ordinary **Open in a new tab instead** link with popup blocking enabled. Confirm the game request has no CampusLoop referrer or appended account/reservation data. Verify no card appears on seller handoffs or completed/cancelled pickups. Browser policies can present desktop pop-outs as tabs; both are acceptable. This feature does not change reservation, payment, Maps, Auth or OpenAI behavior.

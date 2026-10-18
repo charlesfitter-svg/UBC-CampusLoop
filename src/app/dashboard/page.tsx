@@ -16,6 +16,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { useAuth } from "@/components/auth-provider";
+import { FlappyDegreeCard } from "@/components/flappy-degree-card";
 import { backendConfigured, browserSupabase } from "@/lib/supabase/client";
 import {
   deadlineLabel,
@@ -382,6 +383,10 @@ export default function Dashboard() {
                   </button>
                 </>
               )}
+              <FlappyDegreeCard
+                reservationStatus={r.status}
+                isBuyerPickup={tab === "pickups"}
+              />
               {r.status === "completed" && (
                 <p className="completed-note">
                   <Leaf size={15} />
