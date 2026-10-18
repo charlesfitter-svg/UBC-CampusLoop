@@ -7,10 +7,25 @@ export const runtime = "nodejs";
 export const maxDuration = 60;
 const json = (message: string, status: number) =>
   NextResponse.json({ error: message }, { status });
+function isSameOrigin(request: NextRequest) {
+  try {
+    const origin = request.headers.get("origin");
+    const url = new URL(origin ?? "");
+    // Next.js may use the bind hostname in nextUrl. The browser's Host is
+    // the destination authority; never substitute forwarded-host headers.
+    return (
+      origin === url.origin &&
+      (url.protocol === "http:" || url.protocol === "https:") &&
+      url.protocol === request.nextUrl.protocol &&
+      url.host === request.headers.get("host")
+    );
+  } catch {
+    return false;
+  }
+}
 export async function POST(request: NextRequest) {
   // Cookie-authenticated POSTs must originate from our own site.
-  if (request.headers.get("origin") !== request.nextUrl.origin)
-    return json("Invalid request origin.", 403);
+  if (!isSameOrigin(request)) return json("Invalid request origin.", 403);
   const db = await serverSupabase();
   if (!db)
     return json(

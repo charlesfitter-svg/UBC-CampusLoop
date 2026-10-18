@@ -6,13 +6,15 @@
     "node": ">=22"
   },
   "scripts": {
-    "dev": "next dev --hostname 0.0.0.0",
+    "dev": "next dev --hostname localhost",
+    "dev:lan": "next dev --hostname 0.0.0.0",
     "build": "next build",
     "start": "next start --hostname 0.0.0.0",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:e2e": "playwright test",
+    "test:phase2": "playwright test --config playwright.phase2.config.ts",
     "seed": "node --env-file=.env.local scripts/seed.mjs",
     "test:postgres": "node scripts/test-postgres.mjs",
     "format": "prettier --write src tests scripts *.ts *.mjs *.json *.md",

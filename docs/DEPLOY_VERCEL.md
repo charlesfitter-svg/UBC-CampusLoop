@@ -2,6 +2,8 @@
 
 **This is a later, manual guide. Do not execute it until local connected verification passes. No Vercel project import, deployment, custom-domain change or Codex environment publication was performed for this documentation task.** Importing a Git repository into Vercel and clicking Deploy creates a hosted deployment; pushing to a connected production branch can deploy automatically afterward.
 
+Phase 2 requires the [recovery migration](PHASE_2_SETUP.md#required-supabase-upgrade) before relisting. Maps Embed is optional: add `NEXT_PUBLIC_GOOGLE_MAPS_EMBED_API_KEY` in the intended Vercel environments, restrict the key to Maps Embed API and exact authorized HTTP referrers, then rebuild. Follow the [full Google Maps setup](PHASE_2_SETUP.md#optional-google-maps-embed-configuration); external navigation works without the key.
+
 ## 1. Before creating the deployment
 
 - Complete [Mac setup](LOCAL_SETUP_MAC.md), [Supabase setup](SUPABASE_SETUP.md), and [hosted verification](HOSTED_VERIFICATION.md), especially a genuine photo response, two independent accounts, inventory/expiry/authorization and completed impact.

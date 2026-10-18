@@ -10,7 +10,6 @@ import {
   Clock3,
   Leaf,
   MapPin,
-  Navigation,
   ShieldCheck,
 } from "lucide-react";
 import { useAuth } from "./auth-provider";
@@ -18,12 +17,12 @@ import { browserSupabase } from "@/lib/supabase/client";
 import {
   available,
   deadlineLabel,
-  directions,
   imageUrl,
   landmarks,
   money,
   type Listing,
 } from "@/lib/marketplace";
+import { PickupNavigation } from "./pickup-navigation";
 export function ListingDetail({ listing: l }: { listing: Listing }) {
   const router = useRouter();
   const now = useClock();
@@ -224,15 +223,7 @@ export function ListingDetail({ listing: l }: { listing: Listing }) {
               )}
             </div>
           )}
-          <a
-            className="button secondary full"
-            href={directions(l.landmark)}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Navigation size={17} />
-            Get walking directions
-          </a>
+          <PickupNavigation landmark={l.landmark} />
           <p className="fine">
             <Check size={13} />
             Meet at a public landmark. Check your item before handoff.

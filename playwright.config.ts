@@ -5,7 +5,7 @@ export default defineConfig({
   forbidOnly: !!process.env.CI,
   retries: 0,
   use: {
-    baseURL: process.env.PLAYWRIGHT_BASE_URL || "http://127.0.0.1:3000",
+    baseURL: process.env.PLAYWRIGHT_BASE_URL || "http://localhost:3000",
     trace: "retain-on-failure",
     launchOptions: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE
       ? { executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE }
@@ -22,7 +22,7 @@ export default defineConfig({
     ? undefined
     : {
         command: "npm run dev",
-        url: "http://127.0.0.1:3000",
+        url: "http://localhost:3000",
         reuseExistingServer: !process.env.CI,
         timeout: 120000,
       },

@@ -13,12 +13,13 @@ The first implementation was built from the owner's Master MVP Implementation & 
 - Postgres row locks prevent overselling; client-generated UUID keys make reservation retries idempotent. Cancellation restores inventory once. Expiration is enforced in the database without a scheduled worker.
 - Buyer-only pickup codes, seller verification, walking directions via Google Maps URLs, buyer history and seller handoff dashboard.
 - Community impact counts only completed, non-demo handoffs. No invented CO₂ estimates.
+- Free-publication confirmation, compact pickup safety/accessibility resources, optional embedded pickup maps, and guarded expired-listing recovery with a campus reuse directory. See [Phase 2 setup and smoke tests](docs/PHASE_2_SETUP.md) for the required recovery migration and optional restricted Maps Embed key.
 
 Without Supabase configuration, the UI shows six clearly labelled fictional samples. Samples cannot be reserved or contribute to impact. Photo upload and manual editing work in preview; publishing and AI require a signed-in connected account. Preview does not simulate successful backend actions.
 
 ## Start here: Mac + Supabase Cloud
 
-The implementation and owner-uploaded build specification are integrated into GitHub `main`. A real hosted Supabase/OpenAI verification is still pending; preview and mocked-provider tests are not proof of that connection.
+The owner reports a completed two-account hosted Supabase/OpenAI marketplace transaction. Automated preview and mocked-provider tests remain separate from that live verification. Phase 2's hosted upgrade and optional Maps Embed configuration require the owner checks described below.
 
 1. [Mac / VS Code setup](docs/LOCAL_SETUP_MAC.md): clone `charlesfitter-svg/UBC-CampusLoop` on `main`, install Node 24 and dependencies, configure ignored `.env.local`, and start the app.
 2. [Supabase dashboard setup](docs/SUPABASE_SETUP.md): inspect the existing **CampusLoop Main** project, apply the exact migration once, verify explicit grants/RLS, Storage, Email Auth and `/auth/callback`.
@@ -34,6 +35,8 @@ Next.js 16 App Router, React 19, TypeScript, Tailwind CSS 4 plus custom CSS, Sup
 
 ## Run locally
 
+On macOS (Terminal):
+
 ```sh
 npm ci
 if [ ! -e .env.local ]; then cp .env.example .env.local; fi
@@ -41,7 +44,22 @@ if [ ! -e .env.local ]; then cp .env.example .env.local; fi
 npm run dev
 ```
 
-Use the development server address printed in your terminal. For a phone camera, use HTTPS hosting or a supported browser capture input; a secure HTTPS deployment is the most reliable camera demonstration.
+On Windows (PowerShell):
+
+```powershell
+npm.cmd ci
+if (!(Test-Path .env.local)) { Copy-Item .env.example .env.local }
+# Fill in the variables below for connected mode, or leave them empty for preview.
+npm.cmd run dev
+```
+
+`npm.cmd` avoids PowerShell script execution-policy restrictions; use it in place of `npm` for the other commands in this guide when needed.
+
+`npm run dev` binds to `localhost` on both platforms. Open `http://localhost:3000` and use that same origin for sign-in and Supabase callbacks. If port 3000 is occupied, stop your earlier server or select a port with `npm run dev -- --port 3001` and update the callback URLs to match. Restart an existing server after changing the startup command.
+
+For optional LAN testing, run `npm run dev:lan` (`npm.cmd run dev:lan` in PowerShell), then open `http://<your-computer-LAN-IP>:3000` on the other device. This binds to all interfaces, so use a trusted network and allow the port through your firewall if required. Add that exact origin's `/auth/callback` URL in Supabase if testing sign-in. For Next.js development assets/HMR, add only the LAN IP hostname (without scheme or port) to `allowedDevOrigins` in `next.config.ts`; restart the server afterward. That option protects Next.js development endpoints and does not replace the AI route's origin validation. For a phone camera, use HTTPS hosting or a supported browser capture input; a secure HTTPS deployment is the most reliable camera demonstration.
+
+The AI route compares a strictly parsed HTTP(S) `Origin` with the request's `Host` (including port) and Next.js request protocol, rather than the server binding address. Missing, malformed and cross-origin requests receive HTTP 403 in development and production; localhost is never a production allowlist exception. `Forwarded` and `X-Forwarded-Host` are not used for this check. Production builds (`npm run build` / `npm run start`) and Vercel use the same validation. A reverse proxy must preserve the browser-facing `Host` and supply the correct HTTPS protocol metadata through a trusted proxy configuration.
 
 If npm's default cache directory is unavailable in Codex, use `npm ci --cache /tmp/campusloop-npm`.
 
@@ -57,6 +75,8 @@ If npm's default cache directory is unavailable in Codex, use `npm ci --cache /t
 `.env.local` and all secret-bearing env files are ignored by Git. Only `.env.example` is committed. Never put a service-role key or OpenAI key in a `NEXT_PUBLIC_` variable. The running application does not use a service-role key.
 
 ## Supabase setup (existing hosted project)
+
+Phase 2 requires [202610180002_listing_recovery.sql](supabase/migrations/202610180002_listing_recovery.sql). On an existing initialized project, apply only this new upgrade; on a fresh project, apply initialization below and then the upgrade. Follow the [exact owner instructions](docs/PHASE_2_SETUP.md#required-supabase-upgrade); never reset or rerun initialization on a live project.
 
 1. In **SQL Editor**, run the complete file `supabase/migrations/202610180001_marketplace.sql` once. It is a transactional migration, not a script to repeatedly paste into an already migrated database. Back up unrelated existing project data first. The migration creates only CampusLoop tables/functions/policies, backfills profiles for existing Auth users, and creates/configures the `listing-images` bucket.
 2. Under **API settings**, keep the Data API enabled and ensure `public` is an exposed schema. Automatic exposure can remain disabled: the migration explicitly grants the necessary table and function permissions to `anon` and `authenticated`. All five application tables explicitly enable RLS.
@@ -133,6 +153,7 @@ npm run test:postgres    # Docker required; isolated PostgreSQL 17, real concurr
 npm run build
 npm run start
 npm run test:e2e         # preview browser tests; no Supabase env variables configured
+npm run test:phase2      # desktop/mobile UI with mocked Supabase writes; see Phase 2 setup
 ```
 
 `npm run test:e2e` starts the development server unless `PLAYWRIGHT_BASE_URL` points to an already running app. Install Chromium with `npx playwright install chromium`; in Codex, use `PLAYWRIGHT_CHROMIUM_EXECUTABLE=/usr/bin/chromium`. Mobile checks use Chromium with iPhone viewport/touch emulation, not physical Safari. With Supabase connected, use the live walkthrough or the local connected test below; preview tests intentionally assert preview mode.

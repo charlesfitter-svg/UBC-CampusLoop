@@ -123,6 +123,8 @@ npm run dev
 
 Leave the terminal running. Open `http://localhost:3000` in your browser. This is the address on **your Mac**, not a deployed website or a link to the Codex environment. If port 3000 is occupied, stop your earlier CampusLoop server with **Ctrl+C** or identify the other app; do not kill arbitrary processes. If you intentionally choose another port, use `npm run dev -- --port 3001` and update Supabase's local callback URLs to match.
 
+The default command binds to `localhost` on macOS and Windows. For optional phone/LAN access, use the separate `npm run dev:lan` command and follow the [LAN setup notes in the README](../README.md#run-locally), including the exact development hostname and Auth callback configuration. Do not use `0.0.0.0` as the browser URL.
+
 After any `.env.local` change, **Ctrl+C → `npm run dev`**. Production builds also need rebuilding when `NEXT_PUBLIC_` values change. Next.js automatically loads this file; you do not need to `source` it.
 
 Expected connected state: no preview-mode notice; on a new database the feed is honestly empty until someone publishes. Six fictional preview cards mean the public Supabase variables are missing/empty in the running build. A database connection or permissions error is a different state; do not treat an error as evidence of a successful connection.

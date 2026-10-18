@@ -49,6 +49,15 @@ export type Database = {
         Returns: string;
       };
       remove_listing: { Args: { p_id: string }; Returns: undefined };
+      relist_listing: {
+        Args: {
+          p_id: string;
+          p_expires_at: string;
+          p_food_confirmed?: boolean;
+          p_food_details?: string | null;
+        };
+        Returns: string;
+      };
       reserve_listing: {
         Args: { p_listing: string; p_quantity: number; p_key: string };
         Returns: string;

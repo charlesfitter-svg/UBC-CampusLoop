@@ -17,6 +17,13 @@ const migration = readFileSync(
   ),
   "utf8",
 );
+const recoveryMigration = readFileSync(
+  new URL(
+    "../supabase/migrations/202610180002_listing_recovery.sql",
+    import.meta.url,
+  ),
+  "utf8",
+);
 async function as<T = Record<string, unknown>>(
   uid: string | null,
   sql: string,
@@ -69,6 +76,8 @@ async function reserve(id: string, qty = 1, key = randomUUID(), uid = buyer) {
 beforeAll(async () => {
   await db.exec(bootstrap);
   await db.exec(migration);
+  await db.exec(recoveryMigration);
+  await db.exec(recoveryMigration); // The upgrade must be safe to reapply.
   for (const id of [seller, buyer, stranger])
     await db.query(
       'insert into auth.users(id,raw_user_meta_data) values($1,\'{"display_name":"Test neighbour"}\')',
@@ -337,6 +346,187 @@ describe("real PostgreSQL migration functions and role policies (PGlite)", () =>
         )
       ).rows,
     ).toHaveLength(0);
+  });
+});
+
+describe("expired listing recovery (real upgrade SQL)", () => {
+  const future = (days = 1) =>
+    new Date(Date.now() + days * 86400000).toISOString();
+  async function expire(id: string) {
+    await db.query(
+      "update public.listings set expires_at=now()-interval '1 minute' where id=$1",
+      [id],
+    );
+  }
+  async function relist(
+    id: string,
+    expires: string | null = future(),
+    foodConfirmed = false,
+    foodDetails: string | null = null,
+    actor: string | null = seller,
+  ) {
+    return as(actor, "select public.relist_listing($1,$2,$3,$4)", [
+      id,
+      expires,
+      foodConfirmed,
+      foodDetails,
+    ]);
+  }
+  const record = async (id: string) =>
+    (
+      await db.query<Record<string, unknown>>(
+        "select * from public.listings where id=$1",
+        [id],
+      )
+    ).rows[0];
+  const impact = async () =>
+    (await as(null, "select public.impact_totals() as totals")).rows[0].totals;
+
+  it("authorizes only owners and rejects non-expired, removed and sample listings", async () => {
+    const item = await listing();
+    await expect(relist(item.id)).rejects.toThrow(/Only expired/);
+    await expire(item.id);
+    await expect(
+      relist(item.id, future(), false, null, stranger),
+    ).rejects.toThrow(/not yours/);
+    await expect(relist(item.id, future(), false, null, null)).rejects.toThrow(
+      /permission denied/,
+    );
+    await db.query("update public.listings set is_demo=true where id=$1", [
+      item.id,
+    ]);
+    await expect(relist(item.id)).rejects.toThrow(/sample listings/);
+    await db.query("update public.listings set is_demo=false where id=$1", [
+      item.id,
+    ]);
+    await as(seller, "select public.remove_listing($1)", [item.id]);
+    await expect(relist(item.id)).rejects.toThrow(/Removed/);
+  });
+
+  it("preserves images, price, quantity, completed reservations and impact", async () => {
+    const item = await listing({ quantity: 3, price_cents: 825 });
+    const reserved = await reserve(item.id, 1);
+    const secret = (
+      await as<{ code: string }>(
+        buyer,
+        "select code from public.pickup_secrets where reservation_id=$1",
+        [reserved],
+      )
+    ).rows[0].code;
+    await as(seller, "select public.complete_pickup($1,$2)", [
+      reserved,
+      secret,
+    ]);
+    await expire(item.id);
+    const before = await record(item.id),
+      beforeImpact = await impact();
+    await relist(item.id);
+    const after = await record(item.id);
+    const { expires_at: oldDeadline, ...oldFields } = before;
+    const { expires_at: newDeadline, ...newFields } = after;
+    expect(newFields).toEqual(oldFields);
+    expect(after.available_quantity).toBe(2);
+    expect(newDeadline).not.toEqual(oldDeadline);
+    expect(await impact()).toEqual(beforeImpact);
+    expect(
+      (
+        await as(
+          buyer,
+          "select status,unit_price_cents from public.reservations where id=$1",
+          [reserved],
+        )
+      ).rows[0],
+    ).toMatchObject({ status: "completed", unit_price_cents: 825 });
+    await expect(relist(item.id)).rejects.toThrow(/Only expired/);
+    expect(await record(item.id)).toEqual(after);
+  });
+
+  it("blocks relisting and ordinary edit bypasses while preserving late handoffs", async () => {
+    const item = await listing({ quantity: 2 });
+    const reserved = await reserve(item.id);
+    const secret = (
+      await as<{ code: string }>(
+        buyer,
+        "select code from public.pickup_secrets where reservation_id=$1",
+        [reserved],
+      )
+    ).rows[0].code;
+    await expire(item.id);
+    await expect(relist(item.id)).rejects.toThrow(/outstanding reservations/);
+    await expect(
+      as(seller, "select public.save_listing($1,$2)", [
+        { ...item.data, expires_at: future() },
+        item.id,
+      ]),
+    ).rejects.toThrow(/Use Relist item/);
+    const result = await as<{ ok: boolean }>(
+      seller,
+      "select public.complete_pickup($1,$2) as ok",
+      [reserved, secret],
+    );
+    expect(result.rows[0].ok).toBe(true);
+    await relist(item.id);
+    expect((await record(item.id)).available_quantity).toBe(1);
+  });
+
+  it("permits recovery after cancellation without double-restoring inventory", async () => {
+    const item = await listing({ quantity: 2 });
+    const reserved = await reserve(item.id);
+    await expire(item.id);
+    await as(buyer, "select public.cancel_reservation($1)", [reserved]);
+    await relist(item.id);
+    expect((await record(item.id)).available_quantity).toBe(2);
+    await expect(relist(item.id)).rejects.toThrow();
+    expect((await record(item.id)).available_quantity).toBe(2);
+  });
+
+  it("never revives inventory that has all been fulfilled", async () => {
+    const item = await listing();
+    const reserved = await reserve(item.id);
+    const secret = (
+      await as<{ code: string }>(
+        buyer,
+        "select code from public.pickup_secrets where reservation_id=$1",
+        [reserved],
+      )
+    ).rows[0].code;
+    await expire(item.id);
+    await as(seller, "select public.complete_pickup($1,$2)", [
+      reserved,
+      secret,
+    ]);
+    await expect(relist(item.id)).rejects.toThrow(/No unclaimed inventory/);
+  });
+
+  it("requires future deadlines and renewed food confirmation with food limits", async () => {
+    const item = await listing();
+    await expire(item.id);
+    for (const deadline of [null, new Date(0).toISOString(), future(32)])
+      await expect(relist(item.id, deadline)).rejects.toThrow(
+        /future deadline/,
+      );
+    const food = await listing({
+      category: "food",
+      subcategory: "Bakery",
+      food_details: "Seller checked contents and handling.",
+    });
+    await expire(food.id);
+    await expect(relist(food.id)).rejects.toThrow(/Reconfirm food/);
+    await expect(relist(food.id, future(), true, "")).rejects.toThrow(
+      /Reconfirm food/,
+    );
+    await expect(
+      relist(food.id, future(3), true, "Renewed contents and handling."),
+    ).rejects.toThrow(/48 hours/);
+    await relist(
+      food.id,
+      future(),
+      true,
+      "Renewed contents, allergens and handling confirmation.",
+    );
+    expect((await record(food.id)).food_details).toBe(
+      "Renewed contents, allergens and handling confirmation.",
+    );
   });
 });
 

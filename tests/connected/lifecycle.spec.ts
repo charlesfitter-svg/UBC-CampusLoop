@@ -50,6 +50,8 @@ async function publish(page: Page, title: string, paid = false) {
   await page
     .getByRole("button", { name: "Publish listing", exact: true })
     .click();
+  if (!paid)
+    await page.getByRole("button", { name: "Yes, list for free" }).click();
   await expect(
     page.getByRole("heading", { name: title, exact: true }),
   ).toBeVisible();
@@ -86,7 +88,7 @@ test("two actual accounts publish, reserve, cancel, complete and enforce ownersh
     .textContent())!;
   expect(code).toMatch(/^[0-9A-F]{8}$/);
   await expect(
-    buyer.getByRole("link", { name: "Get directions" }),
+    buyer.getByRole("link", { name: "Get walking directions" }),
   ).toHaveAttribute("href", /travelmode=walking/);
   await seller.goto(`${baseURL}/dashboard`);
   await seller

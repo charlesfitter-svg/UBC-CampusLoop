@@ -19,6 +19,7 @@ import { useAuth } from "./auth-provider";
 import { backendConfigured, browserSupabase } from "@/lib/supabase/client";
 import { compressImage } from "@/lib/compress";
 import { aiDraftSchema, type AIDraft } from "@/lib/ai";
+import { needsFreeConfirmation } from "@/lib/listing-recovery";
 import {
   foodCategories,
   imageUrl,
@@ -66,6 +67,10 @@ export function ListingEditor({ existing }: { existing?: Listing }) {
   const input = useRef<HTMLInputElement>(null);
   const camera = useRef<HTMLInputElement>(null);
   const formRef = useRef<HTMLFormElement>(null);
+  const priceInput = useRef<HTMLInputElement>(null);
+  const freeDialog = useRef<HTMLDialogElement>(null);
+  const changePriceButton = useRef<HTMLButtonElement>(null);
+  const publishing = useRef(false);
   const uploaded = useRef<string | null>(existing?.image_path ?? null);
   useEffect(() => {
     // Synchronize persisted browser draft and device-local deadline after hydration.
@@ -187,8 +192,14 @@ export function ListingEditor({ existing }: { existing?: Listing }) {
       setBusy("");
     }
   }
-  async function publish(e: FormEvent) {
-    e.preventDefault();
+  function changePrice() {
+    if (publishing.current) return;
+    freeDialog.current?.close();
+    priceInput.current?.focus();
+  }
+  async function publish(e?: FormEvent, freeConfirmed = false) {
+    e?.preventDefault();
+    if (publishing.current || busy) return;
     setError("");
     setMessage("");
     if (!user) {
@@ -201,7 +212,7 @@ export function ListingEditor({ existing }: { existing?: Listing }) {
       setError("Add a photograph first.");
       return;
     }
-    setBusy("publish");
+    let navigating = false;
     try {
       const deadline = new Date(form.expires).toISOString();
       const deadlineError = validateDeadline(deadline, form.category);
@@ -220,6 +231,16 @@ export function ListingEditor({ existing }: { existing?: Listing }) {
       };
       const valid = listingSchema.safeParse(payload);
       if (!valid.success) throw new Error(valid.error.issues[0].message);
+      if (
+        !freeConfirmed &&
+        needsFreeConfirmation(payload.price_cents, existing?.price_cents)
+      ) {
+        freeDialog.current?.showModal();
+        changePriceButton.current?.focus();
+        return;
+      }
+      publishing.current = true;
+      setBusy("publish");
       const db = browserSupabase();
       if (!uploaded.current) {
         if (!photo) throw new Error("Please reattach your photo.");
@@ -241,11 +262,18 @@ export function ListingEditor({ existing }: { existing?: Listing }) {
         .update({ preferred_landmark: form.landmark })
         .eq("id", user.id);
       sessionStorage.removeItem("campusloop-draft");
+      freeDialog.current?.close();
+      navigating = true;
       router.push(`/listings/${data}`);
     } catch (e) {
+      freeDialog.current?.close();
       setError((e as Error).message);
     } finally {
-      setBusy("");
+      if (publishing.current && !navigating) {
+        publishing.current = false;
+        freeDialog.current?.close();
+        setBusy("");
+      }
     }
   }
   const categories = subcategories.filter((c) =>
@@ -560,21 +588,20 @@ export function ListingEditor({ existing }: { existing?: Listing }) {
             </strong>
           </div>
           <div className="form-row">
-            {Number(form.price) !== 0 && (
-              <label>
-                Price per unit (CAD)
-                <input
-                  type="number"
-                  min="0"
-                  max="1000"
-                  step="0.01"
-                  required
-                  value={form.price}
-                  onChange={(e) => update("price", e.target.value)}
-                />
-                <small>Reserved now. Paid directly at pickup.</small>
-              </label>
-            )}
+            <label>
+              Price per unit (CAD)
+              <input
+                ref={priceInput}
+                type="number"
+                min="0"
+                max="1000"
+                step="0.01"
+                required
+                value={form.price}
+                onChange={(e) => update("price", e.target.value)}
+              />
+              <small>Reserved now. Paid directly at pickup.</small>
+            </label>
             <label>
               Quantity
               <input
@@ -674,6 +701,62 @@ export function ListingEditor({ existing }: { existing?: Listing }) {
           </div>
         </form>
       </div>
+      <dialog
+        ref={freeDialog}
+        className="confirmation-dialog panel"
+        aria-labelledby="free-listing-title"
+        aria-describedby="free-listing-description"
+        onKeyDown={(event) => {
+          if (event.key !== "Tab") return;
+          const buttons = [
+            ...event.currentTarget.querySelectorAll<HTMLButtonElement>(
+              "button:not(:disabled)",
+            ),
+          ];
+          const first = buttons[0],
+            last = buttons.at(-1);
+          if (!first || !last) {
+            event.preventDefault();
+            return;
+          }
+          if (event.shiftKey && document.activeElement === first) {
+            event.preventDefault();
+            last.focus();
+          } else if (!event.shiftKey && document.activeElement === last) {
+            event.preventDefault();
+            first.focus();
+          }
+        }}
+        onCancel={(event) => {
+          event.preventDefault();
+          changePrice();
+        }}
+      >
+        <h2 id="free-listing-title">You’re listing this for free</h2>
+        <p id="free-listing-description">
+          Students will be able to reserve this item for $0. Are you sure you’d
+          like to give it away?
+        </p>
+        <div className="button-row">
+          <button
+            ref={changePriceButton}
+            type="button"
+            className="button secondary"
+            disabled={busy === "publish"}
+            onClick={changePrice}
+          >
+            Change price
+          </button>
+          <button
+            type="button"
+            className="button"
+            disabled={busy === "publish"}
+            onClick={() => publish(undefined, true)}
+          >
+            {busy === "publish" ? "Publishing…" : "Yes, list for free"}
+          </button>
+        </div>
+      </dialog>
     </section>
   );
 }

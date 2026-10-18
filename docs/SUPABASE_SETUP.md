@@ -1,5 +1,7 @@
 # Configure CampusLoop Main in Supabase Cloud
 
+For Phase 2 on an existing database, apply only the new [202610180002_listing_recovery.sql](../supabase/migrations/202610180002_listing_recovery.sql) after initialization, following the [upgrade instructions](PHASE_2_SETUP.md#required-supabase-upgrade). Do not rerun initialization on an already configured project. Fresh projects need both migrations in order.
+
 Use https://supabase.com/dashboard and select **CampusLoop Main** before every change. This app needs **Auth**, **Postgres Data API**, and **Storage** from the same project. A working GitHub connection does not configure them. No Docker or local database is required.
 
 ## 1. Inspect before changing anything — Supabase SQL Editor

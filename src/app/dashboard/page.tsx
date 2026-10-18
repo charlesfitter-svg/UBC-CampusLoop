@@ -10,7 +10,6 @@ import {
   Leaf,
   LogOut,
   MapPin,
-  Navigation,
   Package,
   RefreshCw,
   Sparkles,
@@ -20,7 +19,6 @@ import { useAuth } from "@/components/auth-provider";
 import { backendConfigured, browserSupabase } from "@/lib/supabase/client";
 import {
   deadlineLabel,
-  directions,
   imageUrl,
   landmarks,
   money,
@@ -28,6 +26,8 @@ import {
   type Reservation,
   type Landmark,
 } from "@/lib/marketplace";
+import { PickupNavigation } from "@/components/pickup-navigation";
+import { ExpiredListingRecovery } from "@/components/expired-listing-recovery";
 export default function Dashboard() {
   const router = useRouter();
   const now = useClock();
@@ -356,20 +356,16 @@ export default function Dashboard() {
                           {landmarks[r.listing.landmark].name}
                         </p>
                         <span className="fine">
-                          By {deadlineLabel(r.listing.expires_at)}
+                          Reservation cutoff:{" "}
+                          {deadlineLabel(r.listing.expires_at)}. Your reserved
+                          pickup remains valid afterward.
                         </span>
-                        <a
-                          className="text-link"
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          href={directions(r.listing.landmark)}
-                        >
-                          <Navigation size={15} />
-                          Get directions
-                        </a>
                       </div>
                     )}
                   </div>
+                  {r.listing && (
+                    <PickupNavigation landmark={r.listing.landmark} />
+                  )}
                   <button
                     className="danger-link"
                     disabled={!!busy}
@@ -443,7 +439,7 @@ export default function Dashboard() {
               </div>
               {l.status === "active" && (
                 <div className="button-row">
-                  {!l.is_demo && (
+                  {!l.is_demo && Date.parse(l.expires_at) > now && (
                     <Link
                       className="button secondary small"
                       href={`/listings/${l.id}/edit`}
@@ -469,6 +465,13 @@ export default function Dashboard() {
                   </button>
                 </div>
               )}
+              <ExpiredListingRecovery
+                listing={l}
+                owner={user.id}
+                reservations={reservations}
+                now={now}
+                onRelisted={load}
+              />
             </article>
           ))}
           {!listings.length && !fetching && (

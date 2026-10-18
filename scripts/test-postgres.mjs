@@ -50,6 +50,15 @@ try {
       "utf8",
     ),
   );
+  await pool.query(
+    readFileSync(
+      new URL(
+        "../supabase/migrations/202610180002_listing_recovery.sql",
+        import.meta.url,
+      ),
+      "utf8",
+    ),
+  );
   const seller = randomUUID();
   const users = Array.from({ length: 20 }, () => randomUUID());
   for (const id of [seller, ...users])

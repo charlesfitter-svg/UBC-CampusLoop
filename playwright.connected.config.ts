@@ -4,7 +4,7 @@ export default defineConfig({
   workers: 1,
   timeout: 90000,
   use: {
-    baseURL: process.env.PLAYWRIGHT_BASE_URL || "http://127.0.0.1:3003",
+    baseURL: process.env.PLAYWRIGHT_BASE_URL || "http://localhost:3003",
     trace: "retain-on-failure",
     ...devices["Desktop Chrome"],
     launchOptions: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE
@@ -15,7 +15,7 @@ export default defineConfig({
     ? undefined
     : {
         command: "npm run dev -- --port 3003",
-        url: "http://127.0.0.1:3003",
+        url: "http://localhost:3003",
         timeout: 120000,
         reuseExistingServer: false,
       },
